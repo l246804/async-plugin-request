@@ -1,6 +1,6 @@
 import type { UseAsyncPlugin } from '@magic-js/use-async'
 import type { MaybeFn } from '@rhao/types-base'
-import { type ComputedRef, computed, watch } from '@vue/reactivity'
+import { computed, type ComputedRef, watch } from '@vue/reactivity'
 import { refDebounced } from '@vueuse/core'
 
 export interface LoadingDelayPluginOptions {
