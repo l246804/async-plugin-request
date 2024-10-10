@@ -8,21 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@magic-js/use-async':
-        specifier: ^0.2.1
-        version: 0.2.1(typescript@5.5.4)(vue@3.5.8(typescript@5.5.4))
       '@rhao/types-base':
         specifier: ^1.7.0
         version: 1.7.0(typescript@5.5.4)
-      '@vue/reactivity':
-        specifier: ^3.5.8
-        version: 3.5.8
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.1.0(vue@3.5.8(typescript@5.5.4))
-      axios:
-        specifier: ^1.7.7
-        version: 1.7.7
       nice-fns:
         specifier: ^1.10.0
         version: 1.10.0(typescript@5.5.4)
@@ -39,12 +30,21 @@ importers:
       '@commitlint/types':
         specifier: ^19.5.0
         version: 19.5.0
+      '@magic-js/use-async':
+        specifier: ^0.2.5
+        version: 0.2.5(@vue/reactivity@3.5.8)(typescript@5.5.4)(vue@3.5.8(typescript@5.5.4))
       '@release-it/conventional-changelog':
         specifier: ^8.0.2
         version: 8.0.2(release-it@17.6.0(typescript@5.5.4))
       '@rhao/plop-generators':
         specifier: ^1.2.9
         version: 1.2.9(inquirer@9.3.6)(plop@4.0.1)
+      '@vue/reactivity':
+        specifier: ^3.5.8
+        version: 3.5.8
+      axios:
+        specifier: ^1.7.7
+        version: 1.7.7
       commitizen:
         specifier: ^4.3.0
         version: 4.3.0(@types/node@22.7.2)(typescript@5.5.4)
@@ -686,8 +686,10 @@ packages:
     resolution: {integrity: sha512-f5DRIOZf7wxogefH03RjMPMdBF7ADTWUMoOs9kaJo06EfwF+aFhMZMDZxHg/Xe12hptN9xoZjGso2fdjapBRIA==}
     engines: {node: '>=10'}
 
-  '@magic-js/use-async@0.2.1':
-    resolution: {integrity: sha512-m5ykcUXkh2AC4uX8rNfORp8Ql9VwgMSnNPHG4bs6X/iO/7k9opYHg0B/h762KPGNSsFcz09RNBdWw7eZ3lujWQ==}
+  '@magic-js/use-async@0.2.5':
+    resolution: {integrity: sha512-FxVqCLZX4pKRYcna44HzowXhhnmEPC6QOYP4fiWYxqrGpNGEvXHvgne4BMflBxV9kn6y0LzVAzTIIgyH6/GXFw==}
+    peerDependencies:
+      '@vue/reactivity': ^3.5
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -4733,7 +4735,7 @@ snapshots:
       string-argv: 0.3.2
       type-detect: 4.1.0
 
-  '@magic-js/use-async@0.2.1(typescript@5.5.4)(vue@3.5.8(typescript@5.5.4))':
+  '@magic-js/use-async@0.2.5(@vue/reactivity@3.5.8)(typescript@5.5.4)(vue@3.5.8(typescript@5.5.4))':
     dependencies:
       '@rhao/types-base': 1.7.0(typescript@5.5.4)
       '@vue/reactivity': 3.5.8

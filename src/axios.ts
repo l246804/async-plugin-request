@@ -75,16 +75,13 @@ axios.Axios.prototype.request = function request(
  */
 export function createAxiosPlugin(): UseAsyncPlugin {
   return function AxiosPlugin(pluginCtx) {
-    const { task: rawTask, shell } = pluginCtx
-
-    shell.on('before', (ctx) => {
-      pluginCtx.task = () => {
-        executingCtx = ctx
-        const results = rawTask()
-        executingCtx = null
-        return results
-      }
-    })
+    const { task: rawTask } = pluginCtx
+    pluginCtx.task = (ctx) => {
+      executingCtx = ctx
+      const results = rawTask(ctx)
+      executingCtx = null
+      return results
+    }
   }
 }
 

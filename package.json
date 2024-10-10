@@ -46,7 +46,7 @@
     "taze": "taze -iI major"
   },
   "peerDependencies": {
-    "@magic-js/use-async": "^0.2.1",
+    "@magic-js/use-async": "^0.2.5",
     "@vue/reactivity": "^3.5",
     "axios": "^1.7.7"
   },
@@ -65,7 +65,7 @@
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
     "@commitlint/types": "^19.5.0",
-    "@magic-js/use-async": "^0.2.1",
+    "@magic-js/use-async": "^0.2.5",
     "@release-it/conventional-changelog": "^8.0.2",
     "@rhao/plop-generators": "^1.2.9",
     "@vue/reactivity": "^3.5.8",

@@ -45,9 +45,9 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
 
   let refreshPromise: Promise<any> | null = null
   return function RefreshTokenPlugin(pluginCtx) {
-    const { task: rawTask, shell } = pluginCtx
-
-    shell.on('before', async (ctx) => {
+    const { task: rawTask } = pluginCtx
+    pluginCtx.task = async (ctx) => {
+      // 获取配置项
       const { enabled = baseEnabled } = ctx.options.refreshToken || {}
       const refreshTokenCtx: RefreshTokenContext = {
         ...pluginCtx,
@@ -55,42 +55,40 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
         isAborted: ctx.isAborted,
       }
 
-      pluginCtx.task = async () => {
-        // 禁用时直接返回原始任务
-        if (!toValue(enabled, refreshTokenCtx))
-          return rawTask()
+      // 禁用时直接返回原始任务
+      if (!toValue(enabled, refreshTokenCtx))
+        return rawTask(ctx)
 
-        // 正在刷新时等待刷新成功后执行原始任务
-        if (refreshPromise) {
-          return refreshPromise.then(rawTask)
-        }
+      // 正在刷新时等待刷新成功后执行原始任务
+      if (refreshPromise) {
+        return refreshPromise.then(rawTask)
+      }
 
-        try {
-          return rawTask()
-        }
-        catch (e: unknown) {
-          const error = createError(e)
+      try {
+        return rawTask(ctx)
+      }
+      catch (e: unknown) {
+        const error = createError(e)
 
-          // 验证过期后开始刷新令牌，否则抛出错误
-          if (await assertExpired(error)) {
-            if (!refreshPromise) {
-              refreshPromise = Promise.resolve(
-                handler({ ...refreshTokenCtx, abort: () => ctx.abort(error) }),
-              )
-            }
-
-            return refreshPromise
-              .then(() => !refreshTokenCtx.isAborted() && rawTask())
-              .catch(() => Promise.reject(error))
-              .finally(() => {
-                refreshPromise = null
-              })
+        // 验证过期后开始刷新令牌，否则抛出错误
+        if (await assertExpired(error)) {
+          if (!refreshPromise) {
+            refreshPromise = Promise.resolve(
+              handler({ ...refreshTokenCtx, abort: () => ctx.abort(error) }),
+            )
           }
 
-          throw error
+          return refreshPromise
+            .then(() => !refreshTokenCtx.isAborted() && rawTask(ctx))
+            .catch(() => Promise.reject(error))
+            .finally(() => {
+              refreshPromise = null
+            })
         }
+
+        throw error
       }
-    })
+    }
   }
 }
 
