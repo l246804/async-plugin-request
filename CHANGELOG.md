@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-4](https://github.com/l246804/async-plugin-request/compare/v0.2.0-3...v0.2.0-4) (2024-10-10)
+
+
+### Chores
+
+* 🤖 swr.triggerData 支持仅执行 triggerRef ([f1df124](https://github.com/l246804/async-plugin-request/commit/f1df124738a108e371597dad766d783e78433492))
+
 ## [0.2.0-3](https://github.com/l246804/async-plugin-request/compare/v0.2.0-2...v0.2.0-3) (2024-10-10)
 
 
