@@ -9,7 +9,7 @@ import type {
 import type { MaybeFn } from '@rhao/types-base'
 import { triggerRef } from '@vue/reactivity'
 import { tryOnScopeDispose } from '@vueuse/core'
-import { toValue } from 'nice-fns'
+import { isFunction, toValue } from 'nice-fns'
 
 export interface SWROptions<T extends Task> {
   /**
@@ -20,6 +20,11 @@ export interface SWROptions<T extends Task> {
    * 缓存时间，单位：ms，设置大于 0 时有效
    */
   cacheTime: MaybeFn<number, InferTaskPayload<T>>
+}
+
+interface CacheContext {
+  shell: UseAsyncReturn
+  options: UseAsyncOptions
 }
 
 interface CacheModel {
@@ -34,10 +39,7 @@ interface CacheModel {
   /**
    * `useAsync()` 配置项和返回结果集合
    */
-  contexts: {
-    shell: UseAsyncReturn
-    options: UseAsyncOptions
-  }[]
+  contexts: CacheContext[]
 }
 
 const EXPIRED_FLAG = Symbol('expired flag')
@@ -66,13 +68,22 @@ function getKey({
   options: UseAsyncOptions
   shell: UseAsyncReturn
 }) {
-  // 1. 没有执行记录
-  // 2. 没有配置 key
-  if ((!shell.isFinished.value && !shell.isExecuting.value) || !options.swr?.key) {
+  // 1. 没有配置 key
+  // 2. 没有执行记录并且 key 为函数
+  if (
+    !options.swr?.key
+    || (isFunction(options.swr.key) && !shell.isFinished.value && !shell.isExecuting.value)
+  ) {
     return null
   }
 
   return toValue(options.swr.key, ...payload)
+}
+
+function filterContextsByGetKey(contexts: CacheContext[]) {
+  return contexts.filter(({ options, shell }) =>
+    getKey({ options, shell, payload: shell.payload.value }),
+  )
 }
 
 /**
@@ -84,32 +95,49 @@ export function createSWRPlugin(): UseAsyncPlugin {
   const cacheMap = new Map<string, CacheModel>()
 
   return function SWRPlugin(pluginCtx) {
-    const { task: rawTask, options, shell, hooks } = pluginCtx
+    const { task: rawTask, options: currentOptions, shell: currentShell, hooks } = pluginCtx
 
-    // #region 过滤非自身的有效缓存上下文集合
-    type Predicate = MaybeFn<boolean, [item: { shell: UseAsyncReturn, options: UseAsyncOptions }]>
-    function filterContexts(
-      cache: CacheModel,
-      predicate: Predicate = ({ shell }) => shell.isFinished.value && !shell.isExecuting.value,
-    ) {
-      return cache.contexts.filter((item) => {
-        return item.shell !== shell && item.options !== options && toValue(predicate, item)
-      })
+    // 判断是否为当前上下文
+    const isCurrentContext = (context: CacheContext) => {
+      return context.options === currentOptions && context.shell === currentShell
     }
-    // #endregion
 
     // #region 注册 triggerData()
-    shell.triggerData = () => {
-      const { payload, data } = shell
-      const key = getKey({ payload: payload.value, options, shell })
+    currentShell.triggerData = (containsSelf, syncData = true) => {
+      if (containsSelf) {
+        triggerRef(currentShell.data)
+      }
+
+      const key = getKey({
+        options: currentOptions,
+        shell: currentShell,
+        payload: currentShell.payload.value,
+      })
+
       if (key) {
         const cache = cacheMap.get(key)
         if (cache) {
-          filterContexts(cache).forEach(({ options, shell }) => {
-            const _key = getKey({ options, payload: shell.payload.value, shell })
+          filterContextsByGetKey(cache.contexts).forEach((item) => {
+            if (isCurrentContext(item)) {
+              return
+            }
+
+            const { options, shell } = item
+            const _key = getKey({
+              options,
+              shell,
+              payload: shell.payload.value,
+            })
+
+            // 缓存键相同时执行 triggerRef
             if (_key === key) {
-              shell.data.value = data.value
-              triggerRef(shell.data)
+              const needTrigger = shell.data.value === currentShell.data.value && !syncData
+              if (syncData) {
+                shell.data.value = currentShell.data.value
+              }
+              if (needTrigger) {
+                triggerRef(shell.data)
+              }
             }
           })
         }
@@ -118,10 +146,16 @@ export function createSWRPlugin(): UseAsyncPlugin {
     // #endregion
 
     // #region 注册 markExpired()
-    shell.markExpired = (...args: any[]) => {
+    currentShell.markExpired = (...args: any[]) => {
       const hasArgs = args.length > 0
-      const payload = hasArgs ? args : shell.payload.value
-      const key = getKey({ options, payload, shell })
+      const payload = hasArgs ? args : currentShell.payload.value
+
+      const key = getKey({
+        options: currentOptions,
+        shell: currentShell,
+        payload,
+      })
+
       if (key) {
         expireCache(cacheMap.get(key))
       }
@@ -129,29 +163,44 @@ export function createSWRPlugin(): UseAsyncPlugin {
     // #endregion
 
     // #region 注册 revalidate()
-    shell.revalidate = (...args: any[]) => {
+    currentShell.revalidate = (...args: any[]) => {
       const hasArgs = args.length > 0
-      const payload = hasArgs ? args : shell.payload.value
-      shell.markExpired(...payload)
-      return shell.execute(...payload)
+      const payload = hasArgs ? args : currentShell.payload.value
+      currentShell.markExpired(...payload)
+      return currentShell.execute(...payload)
     }
     // #endregion
 
-    const { cacheTime = 0 } = options.swr || {}
+    const { cacheTime = 0 } = currentOptions.swr || {}
 
     // #region 注册 success 事件
     hooks.hook('success', ({ payload, rawData, data }) => {
-      const key = getKey({ options, payload, shell })
-      if (!key)
+      const key = getKey({
+        options: currentOptions,
+        shell: currentShell,
+        payload,
+      })
+
+      if (!key) {
         return
+      }
 
       const cache = cacheMap.get(key)
       // 第一次成功时更新 lastUpdateTime
       if (cache && cache.lastUpdateTime === EXPIRED_FLAG) {
         cache.lastUpdateTime = Date.now()
         // 更新其他没有正在执行的数据
-        filterContexts(cache).forEach(({ shell, options }) => {
-          const _key = getKey({ options, payload: shell.payload.value, shell })
+        filterContextsByGetKey(cache.contexts).forEach((item) => {
+          if (isCurrentContext(item))
+            return
+
+          const { options, shell } = item
+          const _key = getKey({
+            options,
+            shell,
+            payload: shell.payload.value,
+          })
+
           if (key === _key) {
             shell.rawData.value = rawData
             shell.data.value = data
@@ -163,7 +212,12 @@ export function createSWRPlugin(): UseAsyncPlugin {
 
     // #region 更改 task
     pluginCtx.task = (ctx) => {
-      const key = getKey({ options, payload: ctx.payload, shell })
+      const key = getKey({
+        options: currentOptions,
+        shell: currentShell,
+        payload: ctx.payload,
+      })
+
       const cacheTimeValue = toValue(cacheTime, ...ctx.payload)
       if (!key || cacheTimeValue <= 0) {
         return rawTask(ctx)
@@ -184,8 +238,10 @@ export function createSWRPlugin(): UseAsyncPlugin {
         expireCache(cache)
       }
 
-      // 注册缓存上下文
-      cache.contexts = filterContexts(cache, true).concat({ shell, options })
+      // 缓存当前的上下文
+      if (!cache.contexts.some(isCurrentContext)) {
+        cache.contexts.push({ shell: currentShell, options: currentOptions })
+      }
 
       // 存在 promise 时直接返回
       if (cache.promise) {
@@ -205,7 +261,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
     tryOnScopeDispose(() => {
       const deleteKeys: string[] = []
       for (const [key, cache] of cacheMap) {
-        cache.contexts = filterContexts(cache)
+        cache.contexts = cache.contexts.filter((item) => !isCurrentContext(item))
         if (cache.contexts.length === 0) {
           deleteKeys.push(key)
         }
@@ -226,9 +282,11 @@ declare module '@magic-js/use-async' {
 
   interface UseAsyncReturn<T> {
     /**
-     * 由于 `data.value` 是 `ShallowRef`，可以通过该方法触发其他相同键缓存的响应式数据更新
+     * 由于 `data.value` 是 `ShallowRef`，数据变更视图未同步时需要手动执行 `triggerRef`，该方法用于执行相同缓存键的 `triggerRef`
+     * @param containsSelf 执行时是否包含自身的 `data.value`，默认为 `false`
+     * @param syncData 是否将当前的 `data.value` 同步到其他缓存上的 `data.value`，默认为 `true`，设为 `false` 时仅执行 `triggerRef`
      */
-    triggerData: () => void
+    triggerData: (containsSelf?: boolean, syncData?: boolean) => void
     /**
      * 标记已缓存数据过期
      * - `markExpired()`: 根据最近一次执行参数标记缓存过期
