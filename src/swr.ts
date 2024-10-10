@@ -7,6 +7,7 @@ import type {
   UseAsyncReturn,
 } from '@magic-js/use-async'
 import type { MaybeFn } from '@rhao/types-base'
+import { triggerRef } from '@vue/reactivity'
 import { tryOnScopeDispose } from '@vueuse/core'
 import { toValue } from 'nice-fns'
 
@@ -85,12 +86,34 @@ export function createSWRPlugin(): UseAsyncPlugin {
   return function SWRPlugin(pluginCtx) {
     const { task: rawTask, options, shell, hooks } = pluginCtx
 
-    // #region 过滤非自身的缓存上下文集合
-    type Predicate = (item: { shell: UseAsyncReturn, options: UseAsyncOptions }) => boolean
-    function filterContexts(cache: CacheModel, predicate: Predicate = () => true) {
-      return cache.contexts.filter(
-        (item) => item.shell !== shell && item.options !== options && predicate(item),
-      )
+    // #region 过滤非自身的有效缓存上下文集合
+    type Predicate = MaybeFn<boolean, [item: { shell: UseAsyncReturn, options: UseAsyncOptions }]>
+    function filterContexts(
+      cache: CacheModel,
+      predicate: Predicate = ({ shell }) => shell.isFinished.value && !shell.isExecuting.value,
+    ) {
+      return cache.contexts.filter((item) => {
+        return item.shell !== shell && item.options !== options && toValue(predicate, item)
+      })
+    }
+    // #endregion
+
+    // #region 注册 triggerData()
+    shell.triggerData = () => {
+      const { payload, data } = shell
+      const key = getKey({ payload: payload.value, options, shell })
+      if (key) {
+        const cache = cacheMap.get(key)
+        if (cache) {
+          filterContexts(cache).forEach(({ options, shell }) => {
+            const _key = getKey({ options, payload: shell.payload.value, shell })
+            if (_key === key) {
+              shell.data.value = data.value
+              triggerRef(shell.data)
+            }
+          })
+        }
+      }
     }
     // #endregion
 
@@ -127,10 +150,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
       if (cache && cache.lastUpdateTime === EXPIRED_FLAG) {
         cache.lastUpdateTime = Date.now()
         // 更新其他没有正在执行的数据
-        filterContexts(
-          cache,
-          ({ shell }) => shell.isFinished.value && !shell.isExecuting.value,
-        ).forEach(({ shell, options }) => {
+        filterContexts(cache).forEach(({ shell, options }) => {
           const _key = getKey({ options, payload: shell.payload.value, shell })
           if (key === _key) {
             shell.rawData.value = rawData
@@ -165,7 +185,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
       }
 
       // 注册缓存上下文
-      cache.contexts = filterContexts(cache).concat({ shell, options })
+      cache.contexts = filterContexts(cache, true).concat({ shell, options })
 
       // 存在 promise 时直接返回
       if (cache.promise) {
@@ -205,6 +225,10 @@ declare module '@magic-js/use-async' {
   }
 
   interface UseAsyncReturn<T> {
+    /**
+     * 由于 `data.value` 是 `ShallowRef`，可以通过该方法触发其他相同键缓存的响应式数据更新
+     */
+    triggerData: () => void
     /**
      * 标记已缓存数据过期
      * - `markExpired()`: 根据最近一次执行参数标记缓存过期
