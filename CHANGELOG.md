@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-5](https://github.com/l246804/async-plugin-request/compare/v0.2.0-4...v0.2.0-5) (2024-10-10)
+
+
+### Bug Fixes
+
+* 🐛 修复 swr.triggerData ([3ea82c7](https://github.com/l246804/async-plugin-request/commit/3ea82c7de695ff6deadd966472f18a2e30e407ed))
+
 ## [0.2.0-4](https://github.com/l246804/async-plugin-request/compare/v0.2.0-3...v0.2.0-4) (2024-10-10)
 
 
