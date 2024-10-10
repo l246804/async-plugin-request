@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-2](https://github.com/l246804/async-plugin-request/compare/v0.2.0-1...v0.2.0-2) (2024-10-10)
+
+
+### Bug Fixes
+
+* 🐛 修复 swr 在重复执行同一任务时未共享 promise ([db65da5](https://github.com/l246804/async-plugin-request/commit/db65da5057e5a3fd611b87aa19552fcaeccff73d))
+
 ## [0.2.0-1](https://github.com/l246804/async-plugin-request/compare/v0.2.0-0...v0.2.0-1) (2024-10-10)
 
 
