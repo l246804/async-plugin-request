@@ -7,7 +7,7 @@ import type {
 } from '@magic-js/use-async'
 import type { MaybeFn } from '@rhao/types-base'
 import { tryOnScopeDispose } from '@vueuse/core'
-import { baseAssign, promiseWithControl, toValue } from 'nice-fns'
+import { toValue } from 'nice-fns'
 
 export interface SWRPluginOptions {
   /**
@@ -21,35 +21,41 @@ interface CacheModel {
   /**
    * 最后一次更新时间
    */
-  lastUpdateTime: number | typeof INVALID_TIME
+  lastUpdateTime: number | typeof EXPIRED_FLAG
   /**
-   * 缓存的原始数据
+   * 最近一次执行的任务
    */
-  rawData: any
-  /**
-   * `promiseWithControl()`
-   */
-  promiseCtrl?: ReturnType<typeof promiseWithControl>
+  promise: Promise<any> | null
   /**
    * `useAsync()` 配置项和返回结果集合
    */
   contexts: { shell: UseAsyncReturn, options: UseAsyncOptions }[]
 }
 
-const CANCEL_FLAG = Symbol('cancel flag')
-const INVALID_TIME = Symbol('invalid time')
+function getKey(options: UseAsyncOptions, payload: any[]) {
+  return options.swr?.key ? toValue(options.swr.key, payload) : null
+}
+
+const EXPIRED_FLAG = Symbol('expired flag')
 
 function isValid(cache: CacheModel | undefined, cacheTime: number) {
   return (
     cacheTime > 0
     && !!cache
-    && cache.lastUpdateTime !== INVALID_TIME
+    && cache.lastUpdateTime !== EXPIRED_FLAG
     && Date.now() - cache.lastUpdateTime < cacheTime
   )
 }
 
-function getKey(options: UseAsyncOptions, payload: any[]) {
-  return options.swr?.key ? toValue(options.swr.key, payload) : null
+function initCache() {
+  return { lastUpdateTime: EXPIRED_FLAG, promise: null, contexts: [] } as CacheModel
+}
+
+function expireCache(cache: CacheModel | undefined) {
+  if (cache) {
+    cache.lastUpdateTime = EXPIRED_FLAG
+    cache.promise = null
+  }
 }
 
 /**
@@ -61,7 +67,7 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
 
   const cacheMap = new Map<string, CacheModel>()
   return function SWRPlugin(pluginCtx) {
-    const { options, shell, hooks } = pluginCtx
+    const { task: rawTask, options, shell, hooks } = pluginCtx
 
     type Predicate = (item: { shell: UseAsyncReturn, options: UseAsyncOptions }) => boolean
     function otherContexts(cache: CacheModel, predicate: Predicate = () => true) {
@@ -70,17 +76,22 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
       )
     }
 
-    // #region 注册 revalidate()
-    shell.revalidate = (...args: any[]) => {
+    // #region 注册 markExpired()
+    shell.markExpired = (...args: any[]) => {
       const hasArgs = args.length > 0
       const payload = hasArgs ? args : shell.payload.value
       const key = getKey(options, payload)
       if (key) {
-        const cache = cacheMap.get(key)
-        if (cache) {
-          cache.lastUpdateTime = INVALID_TIME
-        }
+        expireCache(cacheMap.get(key))
       }
+    }
+    // #endregion
+
+    // #region 注册 revalidate()
+    shell.revalidate = (...args: any[]) => {
+      const hasArgs = args.length > 0
+      const payload = hasArgs ? args : shell.payload.value
+      shell.markExpired(...payload)
       return shell.execute(...payload)
     }
     // #endregion
@@ -88,108 +99,63 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
     const { cacheTime = baseCacheTime } = options.swr || {}
 
     // #region 注册 success 事件
-    hooks.hook('success', ({ payload, rawData }) => {
+    hooks.hook('success', ({ payload, rawData, data }) => {
       const key = getKey(options, payload)
       if (!key)
         return
 
       const cache = cacheMap.get(key)
-      if (cache) {
-        baseAssign(cache, {
-          lastUpdateTime: Date.now(),
-          rawData,
-        } as CacheModel)
-
-        cache.promiseCtrl?.resolve(rawData)
+      if (cache && cache.lastUpdateTime === EXPIRED_FLAG) {
+        cache.lastUpdateTime = Date.now()
+        // 更新其他没有正在执行的数据
+        otherContexts(cache, ({ shell }) => !shell.isExecuting.value).forEach(
+          ({ shell, options }) => {
+            const _key = getKey(options, shell.payload.value)
+            if (key === _key) {
+              shell.rawData.value = rawData
+              shell.data.value = data
+            }
+          },
+        )
       }
     })
     // #endregion
 
-    // #region 注册 error 事件
-    hooks.hook('error', ({ payload, rawData }) => {
-      const key = getKey(options, payload)
-      if (!key)
-        return
-
-      const cache = cacheMap.get(key)
-      if (cache) {
-        baseAssign(cache, {
-          lastUpdateTime: INVALID_TIME,
-          rawData,
-        } as CacheModel)
-
-        cache.promiseCtrl?.reject(rawData)
-      }
-    })
-    // #endregion
-
-    // #region 注册 after 事件
-    hooks.hook('after', ({ payload, rawData, data, isCanceled }) => {
-      const key = getKey(options, payload)
-      if (!key)
-        return
-
-      const cache = cacheMap.get(key)
-      if (cache && cache.promiseCtrl) {
-        if (isCanceled()) {
-          cache.promiseCtrl.resolve(CANCEL_FLAG)
-        }
-        else {
-          // 更新其他没有正在执行的数据
-          otherContexts(cache, ({ shell }) => !shell.isExecuting.value).forEach(
-            ({ shell, options }) => {
-              const _key = getKey(options, shell.payload.value)
-              if (key === _key) {
-                shell.rawData.value = rawData
-                shell.data.value = data
-              }
-            },
-          )
-        }
-        cache.promiseCtrl = undefined
-      }
-    })
-    // #endregion
-
-    // #region 注册 before 事件
-    hooks.hook('before', (ctx) => {
+    // #region 更改 task
+    pluginCtx.task = (ctx) => {
       const key = getKey(options, ctx.payload)
       if (!key) {
-        return
+        return rawTask(ctx)
       }
 
       // 获取缓存信息，没有时初始化
       let cache = cacheMap.get(key)
       if (!cache) {
-        cache = {
-          lastUpdateTime: INVALID_TIME,
-          rawData: shell.rawData.value,
-          contexts: [],
-        }
+        cache = initCache()
         cacheMap.set(key, cache)
       }
       else if (!isValid(cache, cacheTime)) {
-        cache.lastUpdateTime = INVALID_TIME
+        expireCache(cache)
       }
 
+      // 注册缓存上下文
       cache.contexts = otherContexts(cache).concat({ shell, options })
 
-      // 更改执行任务，获取缓存数据
+      // 获取缓存数据
       // 1. 存在有效缓存
       // 2. 存在未完成的执行
-      if (cache.lastUpdateTime !== INVALID_TIME || cache.promiseCtrl) {
-        const rawTask = pluginCtx.task
-        pluginCtx.task = () => {
-          const promise = cache.promiseCtrl?.promise || Promise.resolve()
-          // 若前执行被取消则正常执行原始任务
-          return promise.then((val) => val === CANCEL_FLAG ? rawTask() : cache.rawData)
-        }
-        return
+      if (cache.lastUpdateTime !== EXPIRED_FLAG && cache.promise) {
+        return cache.promise
       }
 
-      // 设置当前执行的 promiseCtrl
-      cache.promiseCtrl = promiseWithControl()
-    })
+      cache.promise = rawTask(ctx)
+      cache.promise.catch(() => {
+        expireCache(cache)
+      })
+
+      return cache.promise
+    }
+    // #endregion
 
     tryOnScopeDispose(() => {
       const deleteKeys: string[] = []
@@ -217,9 +183,18 @@ declare module '@magic-js/use-async' {
 
   interface UseAsyncReturn<T> {
     /**
-     * 标记已存在数据为失效状态并重新执行任务获取有效数据
-     * - `revalidate()`: 标记数据失效并执行 `reExecute()`
-     * - `revalidate(...payload)`: 标记数据失效并执行 `execute(...payload)`
+     * 标记已缓存数据过期
+     * - `markExpired()`: 根据最近一次执行参数标记缓存过期
+     * - `markExpired(...payload)`: 根据传入参数标记缓存过期
+     */
+    markExpired: {
+      (): void
+      (...payload: InferTaskPayload<T>): void
+    }
+    /**
+     * 标记已缓存数据过期并重新执行任务获取有效数据
+     * - `revalidate()`: `markExpired() -> reExecute()`
+     * - `revalidate(...payload)`: `markExpired(...payload) -> execute(...payload)`
      */
     revalidate: {
       (): Promise<InferTaskReturn<T> | undefined>
