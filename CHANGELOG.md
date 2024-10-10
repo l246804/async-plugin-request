@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0-1](https://github.com/l246804/async-plugin-request/compare/v0.2.0-0...v0.2.0-1) (2024-10-10)
+
+
+### Chores
+
+* 🤖 优化 SWR 缓存共享功能 ([ca53c49](https://github.com/l246804/async-plugin-request/commit/ca53c4959e1e3e32a2e7bf9f2efc92f9c822b63c))
+* 🤖 update deps ([2a2e7ca](https://github.com/l246804/async-plugin-request/commit/2a2e7ca1b0630aabe75aadd838d7dfc3d2093639))
+
 ## [0.2.0-0](https://github.com/l246804/async-plugin-request/compare/v0.1.0...v0.2.0-0) (2024-10-09)
 
 
