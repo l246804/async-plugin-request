@@ -38,15 +38,6 @@ function getKey(options: UseAsyncOptions, payload: any[]) {
 
 const EXPIRED_FLAG = Symbol('expired flag')
 
-function isValid(cache: CacheModel | undefined, cacheTime: number) {
-  return (
-    cacheTime > 0
-    && !!cache
-    && cache.lastUpdateTime !== EXPIRED_FLAG
-    && Date.now() - cache.lastUpdateTime < cacheTime
-  )
-}
-
 function initCache() {
   return { lastUpdateTime: EXPIRED_FLAG, promise: null, contexts: [] } as CacheModel
 }
@@ -105,6 +96,7 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
         return
 
       const cache = cacheMap.get(key)
+      // 第一次成功时更新 lastUpdateTime
       if (cache && cache.lastUpdateTime === EXPIRED_FLAG) {
         cache.lastUpdateTime = Date.now()
         // 更新其他没有正在执行的数据
@@ -124,7 +116,7 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
     // #region 更改 task
     pluginCtx.task = (ctx) => {
       const key = getKey(options, ctx.payload)
-      if (!key) {
+      if (!key || cacheTime <= 0) {
         return rawTask(ctx)
       }
 
@@ -134,20 +126,21 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
         cache = initCache()
         cacheMap.set(key, cache)
       }
-      else if (!isValid(cache, cacheTime)) {
+
+      // 验证缓存时间
+      if (cache.lastUpdateTime !== EXPIRED_FLAG && Date.now() - cache.lastUpdateTime > cacheTime) {
         expireCache(cache)
       }
 
       // 注册缓存上下文
       cache.contexts = otherContexts(cache).concat({ shell, options })
 
-      // 获取缓存数据
-      // 1. 存在有效缓存
-      // 2. 存在未完成的执行
-      if (cache.lastUpdateTime !== EXPIRED_FLAG && cache.promise) {
+      // 存在 promise 时直接返回
+      if (cache.promise) {
         return cache.promise
       }
 
+      // 设置 promise，并且在失败时让缓存失效
       cache.promise = rawTask(ctx)
       cache.promise.catch(() => {
         expireCache(cache)
