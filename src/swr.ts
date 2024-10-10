@@ -131,7 +131,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
 
             // 缓存键相同时执行 triggerRef
             if (_key === key) {
-              const needTrigger = shell.data.value === currentShell.data.value && !syncData
+              const needTrigger = shell.data.value === currentShell.data.value || !syncData
               if (syncData) {
                 shell.data.value = currentShell.data.value
               }
