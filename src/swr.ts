@@ -1,6 +1,7 @@
 import type {
   InferTaskPayload,
   InferTaskReturn,
+  Task,
   UseAsyncOptions,
   UseAsyncPlugin,
   UseAsyncReturn,
@@ -9,12 +10,15 @@ import type { MaybeFn } from '@rhao/types-base'
 import { tryOnScopeDispose } from '@vueuse/core'
 import { toValue } from 'nice-fns'
 
-export interface SWRPluginOptions {
+export interface SWROptions<T extends Task> {
   /**
-   * 数据缓存时间，单位：ms，仅在初始值大于 0 时开启
-   * @default 0
+   * 请求标识，相同标识的请求将会进行数据缓存和共享，若需根据参数匹配，则应在相同参数时返回同一标识
    */
-  cacheTime?: number
+  key: MaybeFn<string, InferTaskPayload<T>>
+  /**
+   * 缓存时间，单位：ms，设置大于 0 时有效
+   */
+  cacheTime: MaybeFn<number, InferTaskPayload<T>>
 }
 
 interface CacheModel {
@@ -29,17 +33,20 @@ interface CacheModel {
   /**
    * `useAsync()` 配置项和返回结果集合
    */
-  contexts: { shell: UseAsyncReturn, options: UseAsyncOptions }[]
-}
-
-function getKey(options: UseAsyncOptions, payload: any[]) {
-  return options.swr?.key ? toValue(options.swr.key, payload) : null
+  contexts: {
+    shell: UseAsyncReturn
+    options: UseAsyncOptions
+  }[]
 }
 
 const EXPIRED_FLAG = Symbol('expired flag')
 
 function initCache() {
-  return { lastUpdateTime: EXPIRED_FLAG, promise: null, contexts: [] } as CacheModel
+  return {
+    lastUpdateTime: EXPIRED_FLAG,
+    promise: null,
+    contexts: [],
+  } as CacheModel
 }
 
 function expireCache(cache: CacheModel | undefined) {
@@ -49,29 +56,49 @@ function expireCache(cache: CacheModel | undefined) {
   }
 }
 
+function getKey({
+  payload,
+  options,
+  shell,
+}: {
+  payload: any[]
+  options: UseAsyncOptions
+  shell: UseAsyncReturn
+}) {
+  // 1. 没有执行记录
+  // 2. 没有配置 key
+  if ((!shell.isFinished.value && !shell.isExecuting.value) || !options.swr?.key) {
+    return null
+  }
+
+  return toValue(options.swr.key, ...payload)
+}
+
 /**
  * 创建 SWRPlugin
  * @description SWR(stale-while-revalidate)
  */
-export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncPlugin {
-  const { cacheTime: baseCacheTime = 0 } = pluginOptions
-
+export function createSWRPlugin(): UseAsyncPlugin {
+  // 缓存集合
   const cacheMap = new Map<string, CacheModel>()
+
   return function SWRPlugin(pluginCtx) {
     const { task: rawTask, options, shell, hooks } = pluginCtx
 
+    // #region 过滤非自身的缓存上下文集合
     type Predicate = (item: { shell: UseAsyncReturn, options: UseAsyncOptions }) => boolean
-    function otherContexts(cache: CacheModel, predicate: Predicate = () => true) {
+    function filterContexts(cache: CacheModel, predicate: Predicate = () => true) {
       return cache.contexts.filter(
         (item) => item.shell !== shell && item.options !== options && predicate(item),
       )
     }
+    // #endregion
 
     // #region 注册 markExpired()
     shell.markExpired = (...args: any[]) => {
       const hasArgs = args.length > 0
       const payload = hasArgs ? args : shell.payload.value
-      const key = getKey(options, payload)
+      const key = getKey({ options, payload, shell })
       if (key) {
         expireCache(cacheMap.get(key))
       }
@@ -87,11 +114,11 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
     }
     // #endregion
 
-    const { cacheTime = baseCacheTime } = options.swr || {}
+    const { cacheTime = 0 } = options.swr || {}
 
     // #region 注册 success 事件
     hooks.hook('success', ({ payload, rawData, data }) => {
-      const key = getKey(options, payload)
+      const key = getKey({ options, payload, shell })
       if (!key)
         return
 
@@ -100,23 +127,25 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
       if (cache && cache.lastUpdateTime === EXPIRED_FLAG) {
         cache.lastUpdateTime = Date.now()
         // 更新其他没有正在执行的数据
-        otherContexts(cache, ({ shell }) => !shell.isExecuting.value).forEach(
-          ({ shell, options }) => {
-            const _key = getKey(options, shell.payload.value)
-            if (key === _key) {
-              shell.rawData.value = rawData
-              shell.data.value = data
-            }
-          },
-        )
+        filterContexts(
+          cache,
+          ({ shell }) => shell.isFinished.value && !shell.isExecuting.value,
+        ).forEach(({ shell, options }) => {
+          const _key = getKey({ options, payload: shell.payload.value, shell })
+          if (key === _key) {
+            shell.rawData.value = rawData
+            shell.data.value = data
+          }
+        })
       }
     })
     // #endregion
 
     // #region 更改 task
     pluginCtx.task = (ctx) => {
-      const key = getKey(options, ctx.payload)
-      if (!key || cacheTime <= 0) {
+      const key = getKey({ options, payload: ctx.payload, shell })
+      const cacheTimeValue = toValue(cacheTime, ...ctx.payload)
+      if (!key || cacheTimeValue <= 0) {
         return rawTask(ctx)
       }
 
@@ -128,12 +157,15 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
       }
 
       // 验证缓存时间
-      if (cache.lastUpdateTime !== EXPIRED_FLAG && Date.now() - cache.lastUpdateTime > cacheTime) {
+      if (
+        cache.lastUpdateTime !== EXPIRED_FLAG
+        && Date.now() - cache.lastUpdateTime > cacheTimeValue
+      ) {
         expireCache(cache)
       }
 
       // 注册缓存上下文
-      cache.contexts = otherContexts(cache).concat({ shell, options })
+      cache.contexts = filterContexts(cache).concat({ shell, options })
 
       // 存在 promise 时直接返回
       if (cache.promise) {
@@ -153,7 +185,7 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
     tryOnScopeDispose(() => {
       const deleteKeys: string[] = []
       for (const [key, cache] of cacheMap) {
-        cache.contexts = otherContexts(cache)
+        cache.contexts = filterContexts(cache)
         if (cache.contexts.length === 0) {
           deleteKeys.push(key)
         }
@@ -166,12 +198,10 @@ export function createSWRPlugin(pluginOptions: SWRPluginOptions = {}): UseAsyncP
 
 declare module '@magic-js/use-async' {
   interface UseAsyncOptions<T> {
-    swr?: SWRPluginOptions & {
-      /**
-       * 请求标识，相同标识的请求将会进行数据缓存和共享，若需根据参数匹配，则应在相同参数时返回同一标识
-       */
-      key?: MaybeFn<string, InferTaskPayload<T>>
-    }
+    /**
+     * SWR 配置项
+     */
+    swr?: SWROptions<T>
   }
 
   interface UseAsyncReturn<T> {
