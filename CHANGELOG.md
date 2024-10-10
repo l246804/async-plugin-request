@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0-3](https://github.com/l246804/async-plugin-request/compare/v0.2.0-2...v0.2.0-3) (2024-10-10)
+
+
+### Features
+
+* 🎸 swr 新增 triggerData 用于触发其他相同键的响应式数据更新 ([8738129](https://github.com/l246804/async-plugin-request/commit/87381299c6d672db8beb3fedadc78a27fc2ec9f1))
+
+
+### Chores
+
+* 🤖 移除 createSWRPlugin 的配置 ([8448cf8](https://github.com/l246804/async-plugin-request/commit/8448cf852e72a3f91ff9bd85866b65a5830eb76d))
+
 ## [0.2.0-2](https://github.com/l246804/async-plugin-request/compare/v0.2.0-1...v0.2.0-2) (2024-10-10)
 
 
