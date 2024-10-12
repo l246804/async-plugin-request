@@ -66,7 +66,7 @@ axios.Axios.prototype.request = function request(
     ctx = null as any
   }
 
-  return originalRequest(config)
+  return originalRequest.call(this, config) as any
 }
 
 /**
