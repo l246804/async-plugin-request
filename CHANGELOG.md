@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/l246804/async-plugin-request/compare/v0.2.0...v0.2.1) (2024-10-12)
+
+
+### Bug Fixes
+
+* 🐛 修复 axios 插件更改原型函数报错 ([516c96b](https://github.com/l246804/async-plugin-request/commit/516c96bc586ffb3c0660b0b9927488b73dbcf36b))
+
 ## [0.2.0](https://github.com/l246804/async-plugin-request/compare/v0.2.0-5...v0.2.0) (2024-10-10)
 
 ## [0.2.0-5](https://github.com/l246804/async-plugin-request/compare/v0.2.0-4...v0.2.0-5) (2024-10-10)
