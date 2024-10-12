@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/l246804/async-plugin-request/compare/v0.2.1...v0.2.2) (2024-10-12)
+
+
+### Bug Fixes
+
+* 🐛 修复 axios 插件合并配置项后存在属性丢失 ([39123e6](https://github.com/l246804/async-plugin-request/commit/39123e6fc0e1ee6ab8c3d5c4ae482243dea22c1a))
+
 ## [0.2.1](https://github.com/l246804/async-plugin-request/compare/v0.2.0...v0.2.1) (2024-10-12)
 
 
