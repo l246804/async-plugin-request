@@ -2,24 +2,19 @@ import type { ExecuteContext, InferTaskReturn, UseAsyncPlugin } from '@magic-js/
 import type { MaybeFn } from '@rhao/types-base'
 import type { AxiosInstance, AxiosRequestConfig, AxiosStatic } from 'axios'
 import axios from 'axios'
-import { toValue } from 'nice-fns'
-
-// 更改原型函数，执行任务时链接的上下文对象
-let executingCtx: ExecuteContext.Before | null = null
-
-// 原始的 `axios.request()`
-const originalRequest = axios.Axios.prototype.request
-// 获取 axios 上暴露的 `mergeConfig` 方法
-const mergeConfig = (axios as any).mergeConfig as (
-  config1: AxiosRequestConfig,
-  config2?: AxiosRequestConfig,
-) => AxiosRequestConfig
-
-const PRIVATE_STORE_KEY = '_useAsyncAxiosPluginStore'
+import { merge, toValue } from 'nice-fns'
 
 interface PrivateStore {
   signal: AbortSignal
 }
+
+const PRIVATE_STORE_KEY = '_useAsyncAxiosPluginStore'
+
+// 原始的 `axios.request()`
+const originalRequest = axios.Axios.prototype.request
+
+// 更改原型函数，执行任务时链接的上下文对象
+let executingCtx: ExecuteContext.Before | null = null
 
 const axiosMap = new WeakMap()
 axios.Axios.prototype.request = function request(
@@ -55,7 +50,7 @@ axios.Axios.prototype.request = function request(
     let ctx = executingCtx
     executingCtx = null
 
-    config = mergeConfig(config, toValue(ctx.options.axiosConfig, this as AxiosInstance) || {})
+    config = merge({}, config, toValue(ctx.options.axiosConfig, this as AxiosInstance) || {})
     Object.assign(config, {
       [PRIVATE_STORE_KEY]: {
         signal: ctx.signal,
