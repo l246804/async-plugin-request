@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/l246804/async-plugin-request/compare/v0.2.2...v0.2.3) (2024-10-16)
+
+
+### Bug Fixes
+
+* 🐛 修复 refresh-token 未捕获原始任务执行异常 ([37ade08](https://github.com/l246804/async-plugin-request/commit/37ade08fa00613b9f7ccb24e16d09fcee940c300))
+
 ## [0.2.2](https://github.com/l246804/async-plugin-request/compare/v0.2.1...v0.2.2) (2024-10-12)
 
 
