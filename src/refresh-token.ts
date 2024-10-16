@@ -61,11 +61,11 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
 
       // 正在刷新时等待刷新成功后执行原始任务
       if (refreshPromise) {
-        return refreshPromise.then(rawTask)
+        return refreshPromise.then(() => rawTask(ctx))
       }
 
       try {
-        return rawTask(ctx)
+        return await rawTask(ctx)
       }
       catch (e: unknown) {
         const error = createError(e)
@@ -73,9 +73,9 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
         // 验证过期后开始刷新令牌，否则抛出错误
         if (await assertExpired(error)) {
           if (!refreshPromise) {
-            refreshPromise = Promise.resolve(
-              handler({ ...refreshTokenCtx, abort: () => ctx.abort(error) }),
-            )
+            refreshPromise = new Promise((resolve) => {
+              resolve(handler({ ...refreshTokenCtx, abort: () => ctx.abort(error) }))
+            })
           }
 
           return refreshPromise
