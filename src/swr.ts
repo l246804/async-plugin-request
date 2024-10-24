@@ -7,8 +7,7 @@ import type {
   UseAsyncReturn,
 } from '@magic-js/use-async'
 import type { MaybeFn } from '@rhao/types-base'
-import { triggerRef } from '@vue/reactivity'
-import { tryOnScopeDispose } from '@vueuse/core'
+import { onScopeDispose, triggerRef } from '@vue/reactivity'
 import { isFunction, toValue } from 'nice-fns'
 
 export interface SWROptions<T extends Task> {
@@ -258,7 +257,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
     }
     // #endregion
 
-    tryOnScopeDispose(() => {
+    onScopeDispose(() => {
       const deleteKeys: string[] = []
       for (const [key, cache] of cacheMap) {
         cache.contexts = cache.contexts.filter((item) => !isCurrentContext(item))
