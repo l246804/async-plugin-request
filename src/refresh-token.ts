@@ -65,6 +65,7 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
       }
 
       try {
+        // 需等待原始任务的执行
         return await rawTask(ctx)
       }
       catch (e: unknown) {
