@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/l246804/async-plugin-request/compare/v0.2.3...v0.3.0) (2024-10-25)
+
+
+### Features
+
+* 🎸 add UnwrapDataPlugin ([0280d4b](https://github.com/l246804/async-plugin-request/commit/0280d4bd8421b4d0e4524a2620ee838fe19e6e2a))
+
+
+### Chores
+
+* 🤖 LoadingDelay 插件在 onScopeDispose 时释放监听器 ([02d651d](https://github.com/l246804/async-plugin-request/commit/02d651da99e7a432efa2a1e7d67f7208125d0ce7))
+
 ## [0.2.3](https://github.com/l246804/async-plugin-request/compare/v0.2.2...v0.2.3) (2024-10-16)
 
 
