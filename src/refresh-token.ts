@@ -13,9 +13,10 @@ export interface RefreshTokenContext<T extends Task = Task>
   extends UseAsyncPluginContext<T>,
   Pick<ExecuteContext.Before<T>, 'isAborted'> {
   /**
-   * 刷新令牌失败后终止再次执行原始任务并将抛出原始错误
+   * 刷新令牌失败后终止再次执行原始任务
+   * @param silent 设为 `true` 时将尝试返回 `options.initialData` 并进入到 `hooks.success` 事件，否则抛出原始错误，将会进入到 `hooks.error` 事件
    */
-  abort: () => void
+  abort: (silent?: boolean) => void
 }
 
 export interface RefreshTokenPluginOptions {
@@ -47,11 +48,16 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
   return function RefreshTokenPlugin(pluginCtx) {
     const { task: rawTask } = pluginCtx
     pluginCtx.task = async (ctx) => {
+      let shouldThrowError = true
+
       // 获取配置项
       const { enabled = baseEnabled } = ctx.options.refreshToken || {}
       const refreshTokenCtx: RefreshTokenContext = {
         ...pluginCtx,
-        abort: () => ctx.abort(),
+        abort: (silent = false) => {
+          shouldThrowError = !silent
+          return ctx.abort()
+        },
         isAborted: ctx.isAborted,
       }
 
@@ -79,9 +85,22 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
             })
           }
 
+          const promiseHandler = (resumeTask: boolean) => {
+            if (refreshTokenCtx.isAborted()) {
+              if (shouldThrowError) {
+                return Promise.reject(error)
+              }
+              else {
+                return toValue(ctx.options.initialData)
+              }
+            }
+
+            return resumeTask ? rawTask(ctx) : Promise.reject(error)
+          }
+
           return refreshPromise
-            .then(() => !refreshTokenCtx.isAborted() && rawTask(ctx))
-            .catch(() => Promise.reject(error))
+            .then(() => promiseHandler(true))
+            .catch(() => promiseHandler(false))
             .finally(() => {
               refreshPromise = null
             })
