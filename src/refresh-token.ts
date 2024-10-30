@@ -48,16 +48,11 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
   return function RefreshTokenPlugin(pluginCtx) {
     const { task: rawTask } = pluginCtx
     pluginCtx.task = async (ctx) => {
-      let shouldThrowError = true
-
       // 获取配置项
       const { enabled = baseEnabled } = ctx.options.refreshToken || {}
       const refreshTokenCtx: RefreshTokenContext = {
         ...pluginCtx,
-        abort: (silent = false) => {
-          shouldThrowError = !silent
-          return ctx.abort()
-        },
+        abort: () => ctx.abort(),
         isAborted: ctx.isAborted,
       }
 
@@ -76,12 +71,21 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
       }
       catch (e: unknown) {
         const error = createError(e)
+        let shouldThrowError = true
 
         // 验证过期后开始刷新令牌，否则抛出错误
         if (await assertExpired(error)) {
           if (!refreshPromise) {
             refreshPromise = new Promise((resolve) => {
-              resolve(handler({ ...refreshTokenCtx, abort: () => ctx.abort(error) }))
+              resolve(
+                handler({
+                  ...refreshTokenCtx,
+                  abort: (silent) => {
+                    shouldThrowError = !silent
+                    return ctx.abort(error)
+                  },
+                }),
+              )
             })
           }
 
