@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/l246804/async-plugin-request/compare/v0.3.0...v0.3.1) (2024-10-30)
+
+
+### Bug Fixes
+
+* 🐛 修复 RefreshToken 可能导致返回结果为 false ([6d69f86](https://github.com/l246804/async-plugin-request/commit/6d69f8639113c36a8994cb9a8cfd834207502a1c))
+
 ## [0.3.0](https://github.com/l246804/async-plugin-request/compare/v0.2.3...v0.3.0) (2024-10-25)
 
 
