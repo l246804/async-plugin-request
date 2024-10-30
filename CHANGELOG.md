@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/l246804/async-plugin-request/compare/v0.3.1...v0.3.2) (2024-10-30)
+
+
+### Bug Fixes
+
+* 🐛 修复 RefreshToken silent 功能无效 ([5e3469d](https://github.com/l246804/async-plugin-request/commit/5e3469d44d737d2cb54d07d6c95933b5ca1c5ebb))
+
 ## [0.3.1](https://github.com/l246804/async-plugin-request/compare/v0.3.0...v0.3.1) (2024-10-30)
 
 
