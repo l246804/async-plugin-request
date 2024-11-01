@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/l246804/async-plugin-request/compare/v0.3.2...v0.3.3) (2024-11-01)
+
+
+### Chores
+
+* 🤖 replace @vue/reactivity to vue ([d3cbb40](https://github.com/l246804/async-plugin-request/commit/d3cbb402bd445e3c473f7012d6987b0f16e6ffa8))
+* 🤖 replace onScopeDispose to tryOnScopeDispose ([7eb0475](https://github.com/l246804/async-plugin-request/commit/7eb04756749955614e6c6939999589a591dd0a8d))
+
 ## [0.3.2](https://github.com/l246804/async-plugin-request/compare/v0.3.1...v0.3.2) (2024-10-30)
 
 
