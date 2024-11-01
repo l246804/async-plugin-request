@@ -39,9 +39,6 @@ importers:
       '@rhao/plop-generators':
         specifier: ^1.2.9
         version: 1.2.9(inquirer@9.3.6)(plop@4.0.1)
-      '@vue/reactivity':
-        specifier: ^3.5.8
-        version: 3.5.8
       axios:
         specifier: ^1.7.7
         version: 1.7.7
@@ -75,6 +72,9 @@ importers:
       unbuild:
         specifier: ^2.0.0
         version: 2.0.0(typescript@5.5.4)
+      vue:
+        specifier: ^3.5.8
+        version: 3.5.8(typescript@5.5.4)
 
 packages:
 

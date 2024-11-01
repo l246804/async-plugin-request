@@ -7,8 +7,8 @@ import type {
   UseAsyncReturn,
 } from '@magic-js/use-async'
 import type { MaybeFn } from '@rhao/types-base'
-import { onScopeDispose, triggerRef } from '@vue/reactivity'
 import { isFunction, toValue } from 'nice-fns'
+import { onScopeDispose, triggerRef } from 'vue'
 
 export interface SWROptions<T extends Task> {
   /**
