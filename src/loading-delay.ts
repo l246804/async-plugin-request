@@ -1,7 +1,7 @@
 import type { UseAsyncPlugin } from '@magic-js/use-async'
 import type { MaybeFn } from '@rhao/types-base'
-import { refDebounced } from '@vueuse/core'
-import { computed, type ComputedRef, onScopeDispose, watch } from 'vue'
+import { refDebounced, tryOnScopeDispose } from '@vueuse/core'
+import { computed, type ComputedRef, watch } from 'vue'
 
 export interface LoadingDelayPluginOptions {
   /**
@@ -25,7 +25,7 @@ export function createLoadingDelayPlugin(
 
     const debouncedLoading = refDebounced(shell.isExecuting, loadingDelay)
     const unwatch = watch(debouncedLoading, (value) => hooks.callHookSync('loading', value))
-    onScopeDispose(unwatch)
+    tryOnScopeDispose(unwatch)
 
     shell.isLoading = computed(() => debouncedLoading.value)
   }
