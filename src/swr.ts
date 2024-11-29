@@ -88,7 +88,8 @@ function filterContextsByGetKey(contexts: CacheContext[]) {
 
 /**
  * 创建 SWRPlugin
- * @description SWR(stale-while-revalidate)
+ * @description SWR(stale-while-revalidate)，当存在相同 `options.key` 的请求时将共享执行数据，
+ * 在请求离开当前 EffectScope 时自动释放内存
  */
 export function createSWRPlugin(): UseAsyncPlugin {
   // 缓存集合
