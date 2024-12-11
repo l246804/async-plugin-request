@@ -20,6 +20,10 @@ export interface SWROptions<T extends Task> {
    * 缓存时间，单位：ms，设置大于 0 时有效
    */
   cacheTime: MaybeFn<number, InferTaskPayload<T>>
+  /**
+   * 请求离开当前 EffectScope 时会自动释放内存，若没有任何 EffectScope 引用时将会清理缓存数据并在下次请求时重新执行任务，设为 `true` 可以保留缓存数据，支持根据参数动态配置
+   */
+  keepCacheWhenZeroRefs?: MaybeFn<boolean, InferTaskPayload<T>>
 }
 
 interface CacheContext {
@@ -28,6 +32,10 @@ interface CacheContext {
 }
 
 interface CacheModel {
+  /**
+   * 当零引用时是否保留数据
+   */
+  keepWhenZeroRefs: boolean
   /**
    * 最后一次更新时间
    */
@@ -46,6 +54,7 @@ const EXPIRED_FLAG = Symbol('expired flag')
 
 function initCache() {
   return {
+    keepWhenZeroRefs: false,
     lastUpdateTime: EXPIRED_FLAG,
     promise: null,
     contexts: [],
@@ -88,8 +97,7 @@ function filterContextsByGetKey(contexts: CacheContext[]) {
 
 /**
  * 创建 SWRPlugin
- * @description SWR(stale-while-revalidate)，当存在相同 `options.key` 的请求时将共享执行数据，
- * 在请求离开当前 EffectScope 时自动释放内存
+ * @description SWR(stale-while-revalidate)，当存在相同 `options.key` 的请求时将共享执行数据
  */
 export function createSWRPlugin(): UseAsyncPlugin {
   // 缓存集合
@@ -172,7 +180,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
     }
     // #endregion
 
-    const { cacheTime = 0 } = currentOptions.swr || {}
+    const { cacheTime = 0, keepCacheWhenZeroRefs = false } = currentOptions.swr || {}
 
     // #region 注册 success 事件
     hooks.hook('success', ({ payload, rawData, data }) => {
@@ -231,6 +239,9 @@ export function createSWRPlugin(): UseAsyncPlugin {
         cacheMap.set(key, cache)
       }
 
+      // 设置是否在零引用时保留缓存数据
+      cache.keepWhenZeroRefs = toValue(keepCacheWhenZeroRefs, ...ctx.payload)
+
       // 验证缓存时间
       if (
         cache.lastUpdateTime !== EXPIRED_FLAG
@@ -263,7 +274,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
       const deleteKeys: string[] = []
       for (const [key, cache] of cacheMap) {
         cache.contexts = cache.contexts.filter((item) => !isCurrentContext(item))
-        if (cache.contexts.length === 0) {
+        if (cache.contexts.length === 0 && !cache.keepWhenZeroRefs) {
           deleteKeys.push(key)
         }
       }
