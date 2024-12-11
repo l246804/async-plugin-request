@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/l246804/async-plugin-request/compare/v0.3.3...v0.4.0) (2024-12-11)
+
+
+### Features
+
+* 🎸 SWR 支持零引用时保留缓存数据 ([0991416](https://github.com/l246804/async-plugin-request/commit/0991416fc3395f30951606e6954a00968cdf223a))
+
+
+### Chores
+
+* 🤖 补充插件注释说明 ([f182007](https://github.com/l246804/async-plugin-request/commit/f182007319b3f104d1cae07aaf0129c39bdba157))
+
 ## [0.3.3](https://github.com/l246804/async-plugin-request/compare/v0.3.2...v0.3.3) (2024-11-01)
 
 
