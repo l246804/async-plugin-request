@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/l246804/async-plugin-request/compare/v0.4.0...v0.4.1) (2025-02-13)
+
+
+### Chores
+
+* 🤖 axios 导出 patchAxios 函数 ([ddc675a](https://github.com/l246804/async-plugin-request/commit/ddc675ab568199d13598dce63357f026a6201600))
+
 ## [0.4.0](https://github.com/l246804/async-plugin-request/compare/v0.3.3...v0.4.0) (2024-12-11)
 
 
