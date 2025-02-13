@@ -10,58 +10,80 @@ interface PrivateStore {
 
 const PRIVATE_STORE_KEY = '_useAsyncAxiosPluginStore'
 
-// 原始的 `axios.request()`
-const originalRequest = axios.Axios.prototype.request
-
+const onceMap = new WeakMap()
 // 更改原型函数，执行任务时链接的上下文对象
 let executingCtx: ExecuteContext.Before | null = null
 
-const axiosMap = new WeakMap()
-axios.Axios.prototype.request = function request(
-  configOrUrl: string | AxiosRequestConfig,
-  config?: AxiosRequestConfig,
-) {
-  // 注册请求拦截器
-  if (!axiosMap.has(this)) {
-    axiosMap.set(this, true)
+patchAxios(axios.Axios)
 
-    this.interceptors.request.use((config) => {
-      const store = config[PRIVATE_STORE_KEY] as PrivateStore
-      if (store) {
-        // 设置 config.signal
-        if (!config.signal) {
-          config.signal = store.signal
+/**
+ * 为 Axios 原型链上的 request 方法进行补丁，链接 useRequest 配置项，
+ * 默认的 Axios 已被自动补丁，若是存在多 Axios 的场景下可手动调用进行补丁
+ *
+ * @param Axios Axios
+ *
+ * @example
+ * ```ts
+ * import axios from 'axios'
+ *
+ * patchAxios(axios.Axios)
+ * ```
+ */
+export function patchAxios(Axios: typeof axios.Axios) {
+  if (onceMap.has(Axios)) {
+    return
+  }
+  onceMap.set(Axios, true)
+
+  // 原始的 `axios.request()`
+  const originalRequest = Axios.prototype.request
+
+  Axios.prototype.request = function request(
+    configOrUrl: string | AxiosRequestConfig,
+    config?: AxiosRequestConfig,
+  ) {
+    // 注册请求拦截器
+    if (!onceMap.has(this)) {
+      onceMap.set(this, true)
+
+      this.interceptors.request.use((config) => {
+        const store = config[PRIVATE_STORE_KEY] as PrivateStore
+        if (store) {
+          // 设置 config.signal
+          if (!config.signal) {
+            config.signal = store.signal
+          }
         }
-      }
-      return config
-    })
+        return config
+      })
+    }
+
+    if (typeof configOrUrl === 'string') {
+      config = config || {}
+      config.url = configOrUrl
+    }
+    else {
+      config = configOrUrl || {}
+    }
+
+    // 链接 `useAsync()`
+    if (executingCtx) {
+      let ctx = executingCtx
+      executingCtx = null
+
+      config = merge({}, config, toValue(ctx.options.axiosConfig, this as AxiosInstance) || {})
+      Object.assign(config, {
+        [PRIVATE_STORE_KEY]: {
+          signal: ctx.signal,
+        } as PrivateStore,
+      })
+
+      // free mem
+      ctx = null as any
+    }
+
+    return originalRequest.call(this, config) as any
   }
-
-  if (typeof configOrUrl === 'string') {
-    config = config || {}
-    config.url = configOrUrl
-  }
-  else {
-    config = configOrUrl || {}
-  }
-
-  // 链接 `useAsync()`
-  if (executingCtx) {
-    let ctx = executingCtx
-    executingCtx = null
-
-    config = merge({}, config, toValue(ctx.options.axiosConfig, this as AxiosInstance) || {})
-    Object.assign(config, {
-      [PRIVATE_STORE_KEY]: {
-        signal: ctx.signal,
-      } as PrivateStore,
-    })
-
-    // free mem
-    ctx = null as any
-  }
-
-  return originalRequest.call(this, config) as any
 }
 
 /**
