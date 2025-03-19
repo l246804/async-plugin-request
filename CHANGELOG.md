@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0 (2025-03-19)
+
+* chore: 升级依赖并格式化代码 ([f636dbb](https://github.com/l246804/async-plugin-request/commit/f636dbb))
+* refactor(axios): 优化 Axios 插件实现 ([33cf983](https://github.com/l246804/async-plugin-request/commit/33cf983))
+
 ## [0.4.1](https://github.com/l246804/async-plugin-request/compare/v0.4.0...v0.4.1) (2025-02-13)
 
 
