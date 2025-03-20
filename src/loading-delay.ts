@@ -1,6 +1,6 @@
 import type { UseAsyncPlugin } from '@magic-js/use-async'
-import type { MaybeFn } from '@rhao/types-base'
 import type { ComputedRef } from 'vue'
+import type { MaybeFn } from './_interface'
 import { refDebounced, tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
 

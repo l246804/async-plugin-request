@@ -1,8 +1,7 @@
 import type { ExecuteContext, InferTaskReturn, UseAsyncPlugin } from '@magic-js/use-async'
-import type { MaybeFn } from '@rhao/types-base'
-import type { Axios, AxiosInstance, AxiosRequestConfig } from 'axios'
-import { mergeConfig } from 'axios'
-import { toValue } from 'nice-fns'
+import type { Axios, AxiosInstance, AxiosRequestConfig, AxiosStatic } from 'axios'
+import type { MaybeFn } from './_interface'
+import { resolveValue } from './_utils'
 
 interface PrivateStore {
   signal: AbortSignal
@@ -26,7 +25,10 @@ let executingCtx: ExecuteContext.Before | null = null
  * patchAxios(Axios)
  * ```
  */
-export function patchAxios(Constructor: typeof Axios) {
+export function patchAxios(
+  Constructor: typeof Axios,
+  mergeConfig: AxiosStatic['mergeConfig'],
+): void {
   if (onceMap.has(Constructor)) {
     return
   }
@@ -68,7 +70,10 @@ export function patchAxios(Constructor: typeof Axios) {
       let ctx = executingCtx
       executingCtx = null
 
-      config = mergeConfig(config, toValue(ctx.options.axiosConfig, this as AxiosInstance) || {})
+      config = mergeConfig(
+        config,
+        resolveValue(ctx.options.axiosConfig, this as AxiosInstance) || {},
+      )
       Object.assign(config, {
         [PRIVATE_STORE_KEY]: {
           signal: ctx.signal,

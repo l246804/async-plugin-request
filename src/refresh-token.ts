@@ -5,9 +5,9 @@ import type {
   UseAsyncPlugin,
   UseAsyncPluginContext,
 } from '@magic-js/use-async'
-import type { Awaitable } from '@rhao/types-base'
+import type { Awaitable } from './_interface'
 import { createError } from '@magic-js/use-async'
-import { toValue } from 'nice-fns'
+import { resolveValue } from './_utils'
 
 export interface RefreshTokenContext<T extends Task = Task>
   extends UseAsyncPluginContext<T>,
@@ -26,7 +26,7 @@ export interface RefreshTokenPluginOptions {
    * - function: 返回假值时关闭
    * @default true
    */
-  enabled?: boolean | ((ctx: Readonly<RefreshTokenContext>) => Awaitable<unknown> | void)
+  enabled?: boolean | ((ctx: Readonly<RefreshTokenContext>) => Awaitable<void | unknown>)
   /**
    * 验证令牌是否过期
    */
@@ -57,7 +57,7 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
       }
 
       // 禁用时直接返回原始任务
-      if (!toValue(enabled, refreshTokenCtx))
+      if (!resolveValue(enabled, refreshTokenCtx))
         return rawTask(ctx)
 
       // 正在刷新时等待刷新成功后执行原始任务
@@ -95,7 +95,7 @@ export function createRefreshTokenPlugin(pluginOptions: RefreshTokenPluginOption
                 return Promise.reject(error)
               }
               else {
-                return toValue(ctx.options.initialData)
+                return resolveValue(ctx.options.initialData)
               }
             }
 

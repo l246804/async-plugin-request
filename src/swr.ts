@@ -6,10 +6,11 @@ import type {
   UseAsyncPlugin,
   UseAsyncReturn,
 } from '@magic-js/use-async'
-import type { MaybeFn } from '@rhao/types-base'
+import type { MaybeFn } from './_interface'
 import { tryOnScopeDispose } from '@vueuse/core'
-import { isFunction, toValue } from 'nice-fns'
+import { isFunction } from 'es-toolkit'
 import { triggerRef } from 'vue'
+import { resolveValue } from './_utils'
 
 export interface SWROptions<T extends Task> {
   /**
@@ -86,7 +87,7 @@ function getKey({
     return null
   }
 
-  return toValue(options.swr.key, ...payload)
+  return resolveValue(options.swr.key, ...payload)
 }
 
 function filterContextsByGetKey(contexts: CacheContext[]) {
@@ -227,7 +228,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
         payload: ctx.payload,
       })
 
-      const cacheTimeValue = toValue(cacheTime, ...ctx.payload)
+      const cacheTimeValue = resolveValue(cacheTime, ...ctx.payload)
       if (!key || cacheTimeValue <= 0) {
         return rawTask(ctx)
       }
@@ -240,7 +241,7 @@ export function createSWRPlugin(): UseAsyncPlugin {
       }
 
       // 设置是否在零引用时保留缓存数据
-      cache.keepWhenZeroRefs = toValue(keepCacheWhenZeroRefs, ...ctx.payload)
+      cache.keepWhenZeroRefs = resolveValue(keepCacheWhenZeroRefs, ...ctx.payload)
 
       // 验证缓存时间
       if (

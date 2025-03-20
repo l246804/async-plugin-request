@@ -1,10 +1,10 @@
 import type { ExecuteContext, Task, UseAsyncPlugin } from '@magic-js/use-async'
-import type { Awaitable } from '@rhao/types-base'
-import { isFunction } from 'nice-fns'
+import type { Awaitable } from './_interface'
+import { isFunction } from 'es-toolkit'
 
 type CustomUnwrap<T extends Task = Task> = (
   ctx: ExecuteContext.Success<T>,
-) => Awaitable<unknown> | void
+) => Awaitable<unknown | void>
 
 export interface UnwrapDataPluginOptions {
   /**
@@ -102,7 +102,7 @@ export function createUnwrapDataPlugin(pluginOptions: UnwrapDataPluginOptions): 
       ? userUnwrap
       : isFunction(baseUnwrap)
         ? baseUnwrap
-        : () => defaultUnwrap(ctx, baseUnwrap)
+        : () => defaultUnwrap(ctx, baseUnwrap as PropertyKey)
 
     await finalUnwrap(ctx)
   }
