@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "jsx": "preserve",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "useDefineForClassFields": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -13,16 +12,11 @@
     "noImplicitAny": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "downlevelIteration": true,
-    "importHelpers": false,
     "noEmit": true,
     "removeComments": false,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["./src"],
-  "exclude": ["./dist"]
+  "include": ["./src"]
 }

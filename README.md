@@ -7,3 +7,5 @@
 - **axios**: 用于链接 `useAsync` 和 `Axios` 关系。
 - **loading-delay**: 用于请求加载状态变更延迟。
 - **refresh-token**: 用于动态刷新访问令牌。
+- **swr**: 用于缓存请求数据
+- **unwrap-data**: 用于解包请求数据

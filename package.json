@@ -24,6 +24,7 @@
     "request",
     "token"
   ],
+  "sideEffects": false,
   "exports": {
     "./*": {
       "types": "./dist/*.d.ts",
@@ -40,7 +41,7 @@
     "plop": "plop",
     "cz": "cz",
     "prepare": "husky",
-    "build": "unbuild",
+    "build": "rslib build",
     "release": "release-it",
     "lint:fix": "eslint . --fix",
     "taze": "taze -iI major"
@@ -56,9 +57,8 @@
     }
   },
   "dependencies": {
-    "@rhao/types-base": "^1.7.0",
     "@vueuse/core": "^13.0.0",
-    "nice-fns": "^1.10.0"
+    "es-toolkit": "^1.33.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.10.1",
@@ -68,11 +68,13 @@
     "@magic-js/use-async": "^0.2.10",
     "@release-it/conventional-changelog": "^10.0.0",
     "@rhao/plop-generators": "^1.2.14",
+    "@rslib/core": "^0.5.4",
     "axios": "^1.8.3",
     "commitizen": "^4.3.1",
     "eslint": "^9.22.0",
     "git-cz": "^4.9.0",
     "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
     "plop": "^4.0.1",
     "prettier": "^3.5.3",
     "release-it": "^18.1.2",
