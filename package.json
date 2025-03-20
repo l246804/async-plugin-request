@@ -1,7 +1,7 @@
 {
   "name": "async-plugin-request",
   "type": "module",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "use-async plugin for request.",
   "author": "leihaohao <https://github.com/l246804>",
   "license": "MIT",

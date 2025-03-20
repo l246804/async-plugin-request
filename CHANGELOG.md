@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0 (2025-03-20)
+
+* build: 重构构建配置并添加代码风格配置 ([605261a](https://github.com/l246804/async-plugin-request/commit/605261a))
+* refactor(src): 重构代码并优化功能 ([616caeb](https://github.com/l246804/async-plugin-request/commit/616caeb))
+
 ## 1.0.0 (2025-03-19)
 
 * chore: 升级依赖并格式化代码 ([f636dbb](https://github.com/l246804/async-plugin-request/commit/f636dbb))
