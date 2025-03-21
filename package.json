@@ -41,7 +41,7 @@
     "plop": "plop",
     "cz": "cz",
     "prepare": "husky",
-    "build": "rslib build",
+    "build": "tsdown",
     "release": "release-it",
     "lint:fix": "eslint . --fix",
     "taze": "taze -iI major"
@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "@vueuse/core": "^13.0.0",
-    "es-toolkit": "^1.33.0"
+    "nice-fns": "^2.1.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.10.1",
@@ -68,7 +68,7 @@
     "@magic-js/use-async": "^0.2.10",
     "@release-it/conventional-changelog": "^10.0.0",
     "@rhao/plop-generators": "^1.2.14",
-    "@rslib/core": "^0.5.4",
+    "@types/node": "^22.13.10",
     "axios": "^1.8.3",
     "commitizen": "^4.3.1",
     "eslint": "^9.22.0",
@@ -79,8 +79,8 @@
     "prettier": "^3.5.3",
     "release-it": "^18.1.2",
     "taze": "^19.0.2",
+    "tsdown": "^0.6.9",
     "typescript": "^5.8.2",
-    "unbuild": "^3.5.0",
     "vue": "^3.5.13"
   },
   "publishConfig": {

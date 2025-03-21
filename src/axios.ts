@@ -1,7 +1,7 @@
 import type { ExecuteContext, InferTaskReturn, UseAsyncPlugin } from '@magic-js/use-async'
 import type { Axios, AxiosInstance, AxiosRequestConfig, AxiosStatic } from 'axios'
 import type { MaybeFn } from './_interface'
-import { resolveValue } from './_utils'
+import { resolveValue } from 'nice-fns'
 
 interface PrivateStore {
   signal: AbortSignal

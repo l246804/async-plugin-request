@@ -7,7 +7,7 @@ import type {
 } from '@magic-js/use-async'
 import type { Awaitable } from './_interface'
 import { createError } from '@magic-js/use-async'
-import { resolveValue } from './_utils'
+import { resolveValue } from 'nice-fns'
 
 export interface RefreshTokenContext<T extends Task = Task>
   extends UseAsyncPluginContext<T>,

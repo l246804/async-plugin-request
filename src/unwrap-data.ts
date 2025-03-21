@@ -1,6 +1,6 @@
 import type { ExecuteContext, Task, UseAsyncPlugin } from '@magic-js/use-async'
 import type { Awaitable } from './_interface'
-import { isFunction } from 'es-toolkit'
+import { isFunction } from 'nice-fns'
 
 type CustomUnwrap<T extends Task = Task> = (
   ctx: ExecuteContext.Success<T>,

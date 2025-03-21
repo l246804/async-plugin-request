@@ -8,9 +8,8 @@ import type {
 } from '@magic-js/use-async'
 import type { MaybeFn } from './_interface'
 import { tryOnScopeDispose } from '@vueuse/core'
-import { isFunction } from 'es-toolkit'
+import { isFunction, resolveValue } from 'nice-fns'
 import { triggerRef } from 'vue'
-import { resolveValue } from './_utils'
 
 export interface SWROptions<T extends Task> {
   /**
