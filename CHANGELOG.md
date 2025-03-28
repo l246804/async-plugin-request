@@ -1,5 +1,9 @@
 # Changelog
 
+## <small>2.0.2 (2025-03-28)</small>
+
+- fix(axios): 修复 axios 插件合并配置项丢失属性 ([6081c9a](https://github.com/l246804/async-plugin-request/commit/6081c9a))
+
 ## <small>2.0.1 (2025-03-21)</small>
 
 - build: 更新构建工具并调整依赖项 ([ebbedba](https://github.com/l246804/async-plugin-request/commit/ebbedba))
