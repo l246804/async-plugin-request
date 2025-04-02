@@ -1,5 +1,9 @@
 # Changelog
 
+## <small>2.0.3 (2025-04-02)</small>
+
+- chore(axios): 优化 axios 请求方法的 patch 逻辑 ([96597e5](https://github.com/l246804/async-plugin-request/commit/96597e5))
+
 ## <small>2.0.2 (2025-03-28)</small>
 
 - fix(axios): 修复 axios 插件合并配置项丢失属性 ([6081c9a](https://github.com/l246804/async-plugin-request/commit/6081c9a))
