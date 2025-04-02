@@ -31,10 +31,12 @@ export function patchAxios(Constructor: typeof Axios): void {
   }
   onceMap.set(Constructor, true)
 
-  // 原始的 `axios.request()`
-  const originalRequest = Constructor.prototype.request
+  const patchMethod = Reflect.has(Constructor.prototype, '_request') ? '_request' : 'request'
 
-  Constructor.prototype.request = function request(
+  // 原始的 `axios.request()`
+  const originalRequest = Constructor.prototype[patchMethod]
+
+  Constructor.prototype[patchMethod] = function patchedRequest(
     configOrUrl: string | AxiosRequestConfig,
     config?: AxiosRequestConfig,
   ) {
